@@ -1,9 +1,20 @@
-FROM golang
+FROM golang:1.18 as builder
 
 WORKDIR /app
 
 COPY . .
 
-ENTRYPOINT ["go"] 
+RUN go mod init desafio/docker-golang
 
-CMD ["run", "."]
+RUN apt-get update && apt-get install -f -y upx
+RUN go build -a -gcflags=all="-l -B" -ldflags="-w -s" -o fullcycle
+RUN upx fullcycle
+
+FROM busybox:stable-musl
+
+WORKDIR /app
+
+COPY --from=builder /app/fullcycle .
+
+#CMD ["tail","-f","/dev/null"]
+ENTRYPOINT ["./fullcycle"] 
